@@ -109,7 +109,7 @@ def exportToFoam(mesh, dirname='polyMesh'):
         return
 
     #Get salome properties
-    smesh = smeshBuilder.New(salome.myStudy)
+    smesh = smeshBuilder.New()
 
     debugPrint('Number of nodes: %d\n' %(mesh.NbNodes()))
     volumes=mesh.GetElementsByType(SMESH.VOLUME)
@@ -585,7 +585,7 @@ def __crossprod__(u,v):
 
 def findSelectedMeshes():
     meshes=list()
-    smesh = smeshBuilder.New(salome.myStudy)
+    smesh = smeshBuilder.New()
     nrSelected=salome.sg.SelectedCount() # total number of selected items
     foundMesh=False
     for i in range(nrSelected):
