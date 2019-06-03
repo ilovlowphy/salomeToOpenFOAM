@@ -72,6 +72,43 @@ verify=True
 #will probably have to first sort the internal faces then bc-faces within each bc
 
 #obj=theStudy.FindObjectByName('name').GetObject()
+
+class MeshBuffer(object):
+    """
+    Limits the calls to Salome by buffering the face and key details of volumes to speed up exporting
+    """
+    
+    def __init__(self, mesh, v):
+        i = 0
+        faces = list()
+        keys = list()
+        fnodes = mesh.GetElemFaceNodes(v, i)
+
+        while fnodes:                           #While not empty list
+            faces.append(fnodes)                #Face list
+            keys.append(tuple(sorted(fnodes)))  #Buffer key
+            i += 1
+            fnodes=mesh.GetElemFaceNodes(v, i)
+        
+        self.v = v         #The volume
+        self.faces = faces #The sorted face list
+        self.keys = keys
+        self.fL = i        #The number of faces
+    
+    @staticmethod
+    def Key(fnodes):
+        """Takes the nodes and compresses them into a hashable key"""
+        return tuple(sorted(fnodes))
+    
+    @staticmethod
+    def ReverseKey(fnodes):
+        """Takes the nodes and compresses them into a hashable key reversed for baffles"""
+        if type(fnodes) is tuple:
+            return tuple(reversed(fnodes))
+        else:
+            return tuple(sorted(fnodes, reverse=True)) 
+
+
 def exportToFoam(mesh, dirname='polyMesh'):
     """
     Export a mesh to OpenFOAM.
@@ -111,10 +148,10 @@ def exportToFoam(mesh, dirname='polyMesh'):
     #Get salome properties
     smesh = smeshBuilder.New()
 
-    debugPrint('Number of nodes: %d\n' %(mesh.NbNodes()))
+    __debugPrint__('Number of nodes: %d\n' %(mesh.NbNodes()))
     volumes=mesh.GetElementsByType(SMESH.VOLUME)
-    debugPrint('Number of cells: %d\n' %len(volumes))
-    debugPrint('Counting number of faces:\n')
+    __debugPrint__('Number of cells: %d\n' %len(volumes))
+    __debugPrint__('Counting number of faces:\n')
 
     #Filter faces
     filter = smesh.GetFilter(SMESH.EDGE, SMESH.FT_FreeFaces)
@@ -133,10 +170,10 @@ def exportToFoam(mesh, dirname='polyMesh'):
     #so:
     nrFaces = int((nrFaces + nrExtFaces) / 2)
     nrIntFaces = int(nrFaces - nrBCfaces)
-    debugPrint('total number of faces: %d, internal: %d, external %d\n'  \
+    __debugPrint__('total number of faces: %d, internal: %d, external %d\n'  \
         %(nrFaces, nrIntFaces, nrExtFaces))
 
-    debugPrint('Converting mesh to OpenFOAM\n')
+    __debugPrint__('Converting mesh to OpenFOAM\n')
     faces = [] #list of internal face nodes ((1 2 3 4 ... ))
     facesSorted = dict() #each list of nodes is sorted.
     bcFaces = [] #list of bc faces
@@ -155,7 +192,7 @@ def exportToFoam(mesh, dirname='polyMesh'):
     for gr in mesh.GetGroups():
         if gr.GetType() == SMESH.FACE:
             grpNames.append(gr.GetName())
-            debugPrint('found group \"%s\" of type %s, %d\n' \
+            __debugPrint__('found group \"%s\" of type %s, %d\n' \
                            %(gr.GetName(), gr.GetType(), len(gr.GetIDs())), 2)
             grIds = gr.GetIDs()
             nr = len(grIds)
@@ -177,7 +214,7 @@ def exportToFoam(mesh, dirname='polyMesh'):
                             'or more groups. One is : %s'  % (gr.GetName()))
 
             #if the group is a baffle then the faces should be added twice
-            if isGroupBaffle(mesh, gr, extFaces, grIds):
+            if __isGroupBaffle__(mesh, gr, extFaces): #, grIds):
                 nrBCfaces += nr
                 nrFaces += nr
                 nrIntFaces -= nr
@@ -194,11 +231,11 @@ def exportToFoam(mesh, dirname='polyMesh'):
             else:
                 nrExtFacesInGroups += nr
 
-    debugPrint('total number of faces: %d, internal: %d, external %d\n'  \
+    __debugPrint__('total number of faces: %d, internal: %d, external %d\n'  \
         %(nrFaces, nrIntFaces, nrExtFaces), 2)
     #Do the defined groups cover all BC-faces?
     if nrExtFacesInGroups < nrExtFaces:
-        debugPrint('Warning, some elements don\'t have a group (BC). ' +\
+        __debugPrint__('Warning, some elements don\'t have a group (BC). ' +\
                        'Adding to a new group called defaultPatches\n', 1)
         grpStartFace.append(nrIntFaces + ofbcfid)
         grpNrFaces.append(nrExtFaces - nrExtFacesInGroups)
@@ -238,15 +275,15 @@ def exportToFoam(mesh, dirname='polyMesh'):
     #initialise the list faces vs owner/neighbour cells
     owner = [-1] * nrFaces
     neighbour = [-1] * nrIntFaces
-    debugPrint('Finished processing boundary faces\n')
-    debugPrint('bcFaces: %d\n' % len(bcFaces), 2)
-    debugPrint(str(bcFaces) + '\n', 3)
-    debugPrint('bcFacesSorted: %d\n' % len(bcFacesSorted), 2)
-    debugPrint(str(bcFacesSorted) + '\n', 3)
-    debugPrint('owner: %d\n' % len(owner), 2)
-    debugPrint(str(owner) + '\n', 3)
-    debugPrint('neighbour: %d\n' % len(neighbour), 2)
-    debugPrint(str(neighbour) + '\n', 3)
+    __debugPrint__('Finished processing boundary faces\n')
+    __debugPrint__('bcFaces: %d\n' % len(bcFaces), 2)
+    __debugPrint__(str(bcFaces) + '\n', 3)
+    __debugPrint__('bcFacesSorted: %d\n' % len(bcFacesSorted), 2)
+    __debugPrint__(str(bcFacesSorted) + '\n', 3)
+    __debugPrint__('owner: %d\n' % len(owner), 2)
+    __debugPrint__(str(owner) + '\n', 3)
+    __debugPrint__('neighbour: %d\n' % len(neighbour), 2)
+    __debugPrint__(str(neighbour) + '\n', 3)
 
 
     offid = 0
@@ -256,7 +293,7 @@ def exportToFoam(mesh, dirname='polyMesh'):
         nodes = mesh.GetElemNodes(b.v)
         if debug > 2: #Salome call only if verbose
             nodes = mesh.GetElemNodes(b.v)
-            debugPrint('volume id: %d, num nodes %d, nodes:%s \n' %(b.v, len(nodes), nodes), 3)
+            __debugPrint__('volume id: %d, num nodes %d, nodes:%s \n' %(b.v, len(nodes), nodes), 3)
         
         fi = 0 #Face index
         while fi < b.fL:
@@ -269,15 +306,16 @@ def exportToFoam(mesh, dirname='polyMesh'):
                 #already in the dict. Its an internal face and should be added 
                 # to the neighbour list
                 #print('fidinof %d' % fidinof)
+                #--ES: I have seen the following give a: list assignment index out of range
                 neighbour[fidinof] = ofvid
-                debugPrint('\tan owner already exist for %d, %s, cell %d\n' %(fi, fnodes, ofvid), 3)
+                __debugPrint__('\tan owner already exist for %d, %s, cell %d\n' %(fi, fnodes, ofvid), 3)
             except KeyError:
                 #the face is not in the list of internal faces
                 #it might a new face or a BCface.
                 try:
                     bcind = bcFacesSorted[key]
                     #if no exception was trown then it's a bc face
-                    debugPrint('\t found bc face: %d, %s, cell %d\n' %(bcind, fnodes, ofvid), 3)
+                    __debugPrint__('\t found bc face: %d, %s, cell %d\n' %(bcind, fnodes, ofvid), 3)
                     #if the face belongs to a baffle then it exits twice in owner
                     #check dont overwrite owner
                     if owner[nrIntFaces + bcind] == -1:
@@ -292,10 +330,10 @@ def exportToFoam(mesh, dirname='polyMesh'):
                         owner[nrIntFaces + bcind] = ofvid
                 except KeyError:
                     #the face is not in bc list either so it's a new internal face
-                    debugPrint('\t a new face was found, %d, %s, cell %d\n' %(fi, fnodes, ofvid), 3)
+                    __debugPrint__('\t a new face was found, %d, %s, cell %d\n' %(fi, fnodes, ofvid), 3)
                     if verify:
-                        if not verifyFaceOrder(mesh, nodes, fnodes):
-                            debugPrint('\t face has bad order, reversing order\n', 3)
+                        if not __verifyFaceOrder__(mesh, nodes, fnodes):
+                            __debugPrint__('\t face has bad order, reversing order\n', 3)
                             fnodes.reverse()
                     faces.append(fnodes)
                     key = b.keys[fi]
@@ -304,24 +342,24 @@ def exportToFoam(mesh, dirname='polyMesh'):
                     offid += 1
                     if nrFaces > 50 and offid % (nrFaces/50) == 0:
                         if offid % ((nrFaces/50)*10) == 0:
-                            debugPrint(':', 1)
+                            __debugPrint__(':', 1)
                         else:
-                            debugPrint('.', 1)
+                            __debugPrint__('.', 1)
             fi += 1
             
         ofvid += 1
         # end for v in volumes
 
     nrCells = ofvid
-    debugPrint('Finished processing volumes.\n')
-    debugPrint('faces: %d\n' % len(faces), 2)
-    debugPrint(str(faces) + '\n', 3)
-    debugPrint('facesSorted: %d\n' % len(facesSorted), 2)
-    debugPrint(str(facesSorted) + '\n', 3)
-    debugPrint('owner: %d\n' %(len(owner)), 2)
-    debugPrint(str(owner) + '\n', 3)
-    debugPrint('neighbour: %d\n' %(len(neighbour)), 2)
-    debugPrint(str(neighbour) + '\n', 3)
+    __debugPrint__('Finished processing volumes.\n')
+    __debugPrint__('faces: %d\n' % len(faces), 2)
+    __debugPrint__(str(faces) + '\n', 3)
+    __debugPrint__('facesSorted: %d\n' % len(facesSorted), 2)
+    __debugPrint__(str(facesSorted) + '\n', 3)
+    __debugPrint__('owner: %d\n' %(len(owner)), 2)
+    __debugPrint__(str(owner) + '\n', 3)
+    __debugPrint__('neighbour: %d\n' %(len(neighbour)), 2)
+    __debugPrint__(str(neighbour) + '\n', 3)
 
 
     #Convert to "upper triangular order"
@@ -333,7 +371,7 @@ def exportToFoam(mesh, dirname='polyMesh'):
     #     0          17         0          17
     #     1           5         1           5
     # any changes made to neighbour are repeated to faces.
-    debugPrint('Sorting faces in upper triangular order\n', 1)
+    __debugPrint__('Sorting faces in upper triangular order\n', 1)
     ownedfaces = 1
     quickrange = range if sys.version_info.major > 2 else xrange
 
@@ -361,8 +399,8 @@ def exportToFoam(mesh, dirname='polyMesh'):
     converttime = time.time() - starttime
 
     #WRITE points to file
-    debugPrint('Writing the file points\n')
-    writeHeader(filePoints, 'points')
+    __debugPrint__('Writing the file points\n')
+    __writeHeader__(filePoints, 'points')
     points = mesh.GetElementsByType(SMESH.NODE)
     nrPoints = len(points)
     filePoints.write('\n%d\n(\n' % nrPoints)
@@ -374,8 +412,8 @@ def exportToFoam(mesh, dirname='polyMesh'):
     filePoints.close()
 
     #WRITE faces to file
-    debugPrint('Writing the file faces\n')
-    writeHeader(fileFaces, 'faces')
+    __debugPrint__('Writing the file faces\n')
+    __writeHeader__(fileFaces, 'faces')
     fileFaces.write('\n%d\n(\n' % nrFaces)
     for node in faces:
         fileFaces.write('\t%d(' % len(node))
@@ -395,8 +433,8 @@ def exportToFoam(mesh, dirname='polyMesh'):
     fileFaces.close()
 
     #WRITE owner to file
-    debugPrint('Writing the file owner\n')
-    writeHeader(fileOwner, 'owner', nrPoints, nrCells, nrFaces, nrIntFaces)
+    __debugPrint__('Writing the file owner\n')
+    __writeHeader__(fileOwner, 'owner', nrPoints, nrCells, nrFaces, nrIntFaces)
     fileOwner.write('\n%d\n(\n' % len(owner))
     for cell in owner:
         fileOwner.write(' %d \n' % cell)
@@ -405,8 +443,8 @@ def exportToFoam(mesh, dirname='polyMesh'):
     fileOwner.close()
 
     #WRITE neighbour
-    debugPrint('Writing the file neighbour\n')
-    writeHeader(fileNeighbour, 'neighbour', nrPoints, nrCells, nrFaces, nrIntFaces)
+    __debugPrint__('Writing the file neighbour\n')
+    __writeHeader__(fileNeighbour, 'neighbour', nrPoints, nrCells, nrFaces, nrIntFaces)
     fileNeighbour.write('\n%d\n(\n' %(len(neighbour)))
     for cell in neighbour:
         fileNeighbour.write(' %d\n' %(cell))
@@ -415,8 +453,8 @@ def exportToFoam(mesh, dirname='polyMesh'):
     fileNeighbour.close()
 
     #WRITE boundary file
-    debugPrint('Writing the file boundary\n')
-    writeHeader(fileBoundary, 'boundary')
+    __debugPrint__('Writing the file boundary\n')
+    __writeHeader__(fileBoundary, 'boundary')
     fileBoundary.write('%d\n(\n' %len(grpStartFace))
     for ind, gname in enumerate(grpNames):
         fileBoundary.write('\t%s\n\t{\n' %gname)
@@ -443,11 +481,11 @@ def exportToFoam(mesh, dirname='polyMesh'):
             fileCellZones = open(dirname + '/cellZones', 'w')
         except Exception:
             print('Could not open the file cellZones, other files are ok.')
-        debugPrint('Writing file cellZones\n')
+        __debugPrint__('Writing file cellZones\n')
         #create a dictionary where salomeIDs are keys
         #and OF cell ids are values.
         scToOFc = dict([sa, of] for of, sa in enumerate(volumes))
-        writeHeader(fileCellZones, 'cellZones')
+        __writeHeader__(fileCellZones, 'cellZones')
         fileCellZones.write('\n%d(\n' %nrCellZones)
 
         for grp in mesh.GetGroups():
@@ -468,10 +506,10 @@ def exportToFoam(mesh, dirname='polyMesh'):
         fileCellZones.close()
 
     totaltime = time.time() - starttime
-    debugPrint('Finished writing to %s \n' % dirname)
-    debugPrint('Converted mesh in %.0fs\n' % (converttime), 1)
-    debugPrint('Wrote mesh in %.0fs\n' % (totaltime - converttime), 1)
-    debugPrint('Total time: %0.fs\n' % totaltime, 1)
+    __debugPrint__('Finished writing to %s \n' % dirname)
+    __debugPrint__('Converted mesh in %.0fs\n' % (converttime), 1)
+    __debugPrint__('Wrote mesh in %.0fs\n' % (totaltime - converttime), 1)
+    __debugPrint__('Total time: %0.fs\n' % totaltime, 1)
                    
 
 def __writeHeader__(file,fileType,nrPoints=0,nrCells=0,nrFaces=0,nrIntFaces=0):
