@@ -406,7 +406,7 @@ def exportToFoam(mesh, dirname='polyMesh'):
     filePoints.write('\n%d\n(\n' % nrPoints)
     for n, ni in enumerate(points):
         pos = mesh.GetNodeXYZ(ni)
-        filePoints.write('\t(%g %g %g)\n' % (pos[0], pos[1], pos[2]))
+        filePoints.write('\t(%.10g %.10g %.10g)\n' % (pos[0], pos[1], pos[2]))
     filePoints.write(')\n')
     filePoints.flush()
     filePoints.close()
