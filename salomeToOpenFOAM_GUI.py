@@ -507,9 +507,9 @@ def exportToFoam(mesh, dirname='polyMesh'):
 
     totaltime = time.time() - starttime
     __debugPrint__('Finished writing to %s \n' % dirname)
-    __debugPrint__('Converted mesh in %.0fs\n' % (converttime), 1)
-    __debugPrint__('Wrote mesh in %.0fs\n' % (totaltime - converttime), 1)
-    __debugPrint__('Total time: %0.fs\n' % totaltime, 1)
+    __debugPrint__('Converted mesh in %.3fs\n' % (converttime), 1)
+    __debugPrint__('Wrote mesh in %.3fs\n' % (totaltime - converttime), 1)
+    __debugPrint__('Total time: %.3fs\n' % totaltime, 1)
                    
 
 def __writeHeader__(file,fileType,nrPoints=0,nrCells=0,nrFaces=0,nrIntFaces=0):
