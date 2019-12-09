@@ -94,8 +94,8 @@ if salome.sg.hasDesktop():
 import salomeToOpenFOAM as st
 st.debug=0
 st.exportToFoam(Mesh_1,"samplePipeWithBaffle/polyMesh")
-print """
+print("""
 Mesh has been exported. The utility checkMesh
 will report report the baffle as "multiply connected (shared edge)".
 It seems that is not a problem
-"""
+""")

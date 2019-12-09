@@ -148,10 +148,10 @@ if salome.sg.hasDesktop():
 import salomeToOpenFOAM as sof
 sof.debug=0
 sof.exportToFoam(FinalMesh,'./sampleMultiRegionPipeWithViscous/polyMesh')
-print """
+print("""
 Mesh has been exported. 
 Run the OpenFOAM utility 
 splitMeshRegions -cellZones
 to split the mesh in regeions
 
-"""
+""")
