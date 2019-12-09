@@ -630,7 +630,7 @@ def findSelectedMeshes():
         selected=salome.sg.getSelected(i)
         selobjID=salome.myStudy.FindObjectID(selected)
         selobj=selobjID.GetObject()
-        if 1==1:#selobj.__class__ == SMESH._objref_SMESH_Mesh or selobj.__class__ == salome.smesh.smeshBuilder.meshProxy:
+        if selobj.__class__ == SMESH._objref_SMESH_Mesh or selobj.__class__ == salome.smesh.smeshBuilder.meshProxy:
             mName=selobjID.GetName().replace(" ","_")
             foundMesh=True
             mesh=smesh.Mesh(selobj)
