@@ -53,7 +53,7 @@ geompy.addToStudyInFather( pipe, outlet, 'outlet' )
 import  SMESH, SALOMEDS
 from salome.smesh import smeshBuilder
 
-smesh = smeshBuilder.New(theStudy)
+smesh = smeshBuilder.New()
 from salome.NETGENPlugin import NETGENPluginBuilder
 from salome.StdMeshers import StdMeshersBuilder
 Mesh_1 = smesh.Mesh(pipe)

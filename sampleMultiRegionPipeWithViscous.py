@@ -63,7 +63,7 @@ geompy.addToStudyInFather( fluid, outlet, 'outlet' )
 import  SMESH, SALOMEDS
 from salome.smesh import smeshBuilder
 
-smesh = smeshBuilder.New(theStudy)
+smesh = smeshBuilder.New()
 from salome.StdMeshers import StdMeshersBuilder
 from salome.NETGENPlugin import NETGENPluginBuilder
 solidMesh = smesh.Mesh(solid)

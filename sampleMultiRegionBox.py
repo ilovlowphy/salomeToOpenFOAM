@@ -62,7 +62,7 @@ geompy.addToStudyInFather( Partition_1, fluidWall, 'fluidWall' )
 import  SMESH, SALOMEDS
 from salome.smesh import smeshBuilder
 
-smesh = smeshBuilder.New(theStudy)
+smesh = smeshBuilder.New()
 from salome.NETGENPlugin import NETGENPluginBuilder
 Mesh_1 = smesh.Mesh(Partition_1)
 NETGEN_2D3D = Mesh_1.Tetrahedron(algo=smeshBuilder.NETGEN_1D2D3D)
